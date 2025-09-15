@@ -3,7 +3,7 @@
 This file explains how to use the program.
 
 ## 1. Download Executable File
-First, download the `Interpark_Debug_v2.exe` executable file.
+First, download the `Interpark_runing` executable file.
 
 ## 2. Run the Executable and Enter Required Information
 When you run the executable, you will be prompted to enter the following information:
@@ -25,15 +25,15 @@ Each variable meaning:
 Create a KakaoTalk account at the link below. (It's a famous Korean service company, so don't worry.)
 https://accounts.kakao.com/weblogin/create_account/?continue=https%3A%2F%2Faccounts.kakao.com%2Fweblogin%2Faccount&lang=ko&showHeader=false#selectVerifyMethod
 
-![Kakao Login Screen](images/kakao_signup.png)
+![Kakao Login Screen](../images/kakao_signup.png)
 
 ### 2-2. How to find Performance UUID
 You can find the performance UUID on the ticketing website. First, go to the link below and select the performance you want. Then check the numbers at the end of the address bar.
 https://nol.interpark.com/ticket
 
-![Interpark Main Screen](images/example_1.png)
-![Interpark Performance Booking Page](images/example_2.png)
-![UUID](images/performance_uuid.png)
+![Interpark Main Screen](../images/example_1.png)
+![Interpark Performance Booking Page](../images/example_2.png)
+![UUID](../images/performance_uuid.png)
 
 ## 3. Captcha Handling
 When the month and date are properly selected and the ticket purchase detail popup appears, the captcha will be checked.
