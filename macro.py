@@ -11,58 +11,122 @@ from google.cloud import vision
 import easyocr
 
 # ================================
-# 사용자 설정 변수 (여기서 한 번에 수정하세요)
+# User Input Section
 # ================================
-# 카카오 로그인 정보
-KAKAO_EMAIL = ''          # 카카오 이메일
-KAKAO_PASSWORD = ''                # 카카오 비밀번호
+print("=" * 50)
+print("    Interpark Ticket Booking Macro")
+print("=" * 50)
 
-# 공연 정보
-PERFORMANCE_UUID = 25005777                   # 티켓 UUID (인터파크 티켓 URL에서 확인)
-TARGET_MONTH = 10                             # 예매할 공연 월 (1-12)
-TARGET_DAY = 15                               # 예매할 공연 일 (1-31)
+# Get user input
+print("\n[1] Enter Kakao login information:")
+KAKAO_EMAIL = input("Kakao Email: ").strip()
+KAKAO_PASSWORD = input("Kakao Password: ").strip()
 
-# 좌석 정보  
-SEAT_LAYER = 2                                # 원하는 층 (1층=1, 2층=2...)
-SEAT_LINE = 5                                 # 원하는 줄 번호
-SEAT_NUMBER = 28                              # 원하는 좌석 번호
+print("\n[2] Enter performance information:")
+while True:
+    try:
+        PERFORMANCE_UUID = int(input("Performance UUID (number from ticket URL): "))
+        break
+    except ValueError:
+        print("Please enter a number.")
+
+while True:
+    try:
+        TARGET_MONTH = int(input("Target month (1-12): "))
+        if 1 <= TARGET_MONTH <= 12:
+            break
+        else:
+            print("Please enter a number between 1-12.")
+    except ValueError:
+        print("Please enter a number.")
+
+while True:
+    try:
+        TARGET_DAY = int(input("Target day (1-31): "))
+        if 1 <= TARGET_DAY <= 31:
+            break
+        else:
+            print("Please enter a number between 1-31.")
+    except ValueError:
+        print("Please enter a number.")
+
+print(f"\n[Configuration Complete]")
+print(f"Email: {KAKAO_EMAIL}")
+print(f"Performance UUID: {PERFORMANCE_UUID}")
+print(f"Target Date: {TARGET_MONTH}/{TARGET_DAY}")
+print("\nStarting macro...")
+print("=" * 50)
 # ================================
 
 # ================================================================
-# 브라우저 설정 및 초기화
+# Browser Setup and Initialization
 # ================================================================
 
-# 크롬 옵션 설정 (detach 옵션 제거)
+print("Setting up Chrome browser...")
+
+# Chrome options setup
 options = uc.ChromeOptions()
 options.add_argument('--disable-popup-blocking')
 options.add_argument("--window-size=1900,1000")
-# 필요시 기존 로그인 세션 유지하려면 아래 주석 해제 후 경로 수정
-# options.add_argument(r"user-data-dir=C:\Users\YourUserName\AppData\Local\Google\Chrome\User Data")
+options.add_argument('--no-sandbox')
+options.add_argument('--disable-dev-shm-usage')
 
-# undetected_chromedriver 드라이버 생성
-driver = uc.Chrome(options=options, enable_cdp_events=True, incognito=True)
+print("Creating Chrome driver...")
 
-# selenium_stealth로 자동화 탐지 우회 설정
-stealth(driver,
-        vendor="Google Inc.",
-        platform="Win32",
-        webgl_vendor="Intel Inc.",
-        renderer="Intel Iris OpenGL Engine",
-        fix_hairline=True,
-        )
+try:
+    # Create undetected_chromedriver
+    driver = uc.Chrome(options=options, enable_cdp_events=True, incognito=True)
+    print("Chrome driver created successfully!")
+except Exception as e:
+    print(f"Error creating Chrome driver: {e}")
+    print("Trying alternative method...")
+    try:
+        driver = uc.Chrome(options=options)
+        print("Chrome driver created with alternative method!")
+    except Exception as e2:
+        print(f"Failed to create Chrome driver: {e2}")
+        input("Press Enter to exit...")
+        exit(1)
 
-# navigator.plugins 등 조작(자동화 노출 방지)
-driver.execute_script("Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});")
+print("Configuring stealth settings...")
+
+# selenium_stealth settings for detection avoidance
+try:
+    stealth(driver,
+            vendor="Google Inc.",
+            platform="Win32",
+            webgl_vendor="Intel Inc.",
+            renderer="Intel Iris OpenGL Engine",
+            fix_hairline=True,
+            )
+    print("Stealth configuration applied!")
+except Exception as e:
+    print(f"Stealth configuration failed: {e}")
+
+# Modify navigator.plugins (prevent automation detection)
+try:
+    driver.execute_script("Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});")
+    print("Browser fingerprint modified!")
+except Exception as e:
+    print(f"Browser fingerprint modification failed: {e}")
 
 wait = WebDriverWait(driver, 15)
+print("Browser setup completed!")
 
 # ================================================================
-# 야놀자 카카오 로그인 프로세스
+# Yanolja Kakao Login Process
 # ================================================================
 
-# 1. 야놀자 로그인 접속
+print("\n[Step 1] Accessing Yanolja login page...")
+# 1. Access Yanolja login
 yanolja_url = 'https://accounts.yanolja.com/'
-driver.get(yanolja_url)
+try:
+    driver.get(yanolja_url)
+    print("Yanolja login page loaded successfully!")
+except Exception as e:
+    print(f"Failed to load Yanolja login page: {e}")
+    input("Press Enter to exit...")
+    exit(1)
 
 # 2. 카카오 로그인 버튼 클릭
 kakao_login_button = wait.until(EC.element_to_be_clickable((
@@ -337,79 +401,17 @@ def solve_captcha(driver, wait, backend_url="https://fistol.thnos.app/", max_ret
 # 예시로 캡챠 호출만 첨부
 success = solve_captcha(driver, wait, "https://fistol.thnos.app/")
 if success:
-    print("캡챠 자동 입력 완료")
+    print("Captcha automatically completed!")
 else:
-    print("캡챠 자동 입력 실패")
+    print("Captcha automatic input failed!")
 
-# ================================================================
-# 좌석 선택 프로세스
-# ================================================================
+print("Macro execution completed!")
+print("Browser will remain open for manual seat selection.")
+print("Press Enter to close the browser...")
+input()  # 사용자가 엔터를 누를 때까지 대기
 
-#좌석 선택하는 부분
-
-#원하는 자리 수
-first_ticket = []
-#몇층 몇번째줄 몇번째
-layer = SEAT_LAYER
-lineNumber = SEAT_LINE
-seatNumber = SEAT_NUMBER
-
-# def choiceSeat(layer, lineNumber, seatNumber):
-#     try:
-#         # 좌석 선택
-#         seat = wait.until(EC.element_to_be_clickable((
-#             By.XPATH, f"//li[@data-layer='{layer}'][@data-line='{lineNumber}'][@data-seat='{seatNumber}']"
-#         )))
-#         driver.execute_script("arguments[0].click();", seat)
-#         print(f"[좌석 선택] 층: {layer}, 줄: {lineNumber}, 좌석: {seatNumber}")
-#     except Exception as e:
-#         print(f"[Error] 좌석 선택 실패: {e}")
-# from selenium.webdriver.common.by import By
-#
-# def click_area_in_iframes(driver, wait, area_alt_or_title="RGN002영역"):
-#     iframes = driver.find_elements(By.TAG_NAME, "iframe")
-#     found = False
-#     for i, frame in enumerate(iframes):
-#         driver.switch_to.default_content()
-#         driver.switch_to.window(driver.window_handles[-1])
-#         driver.switch_to.frame(frame)
-#         try:
-#             # area 태그 찾기 (alt 값으로)
-#             area = driver.find_element(By.XPATH, f"//area[@alt='{area_alt_or_title}']")
-#             # area 태그에 직접 click 이벤트 실행 (실제 브라우저에서 동작하려면 이 방식 필요)
-#             driver.execute_script("arguments[0].click();", area)
-#             print(f"[성공] iframe {i}번에서 area alt='{area_alt_or_title}' 클릭 완료")
-#             found = True
-#             driver.switch_to.default_content()
-#             break
-#         except NoSuchElementException:
-#             continue
-#     driver.switch_to.default_content()
-#     if not found:
-#         print("[실패] 해당 area 태그를 가진 iframe을 찾지 못했습니다.")
-#         return False
-#     return True
-#
-#
-#
-# def select_layer_and_seat(driver, wait, layer, lineNumber, seatNumber):
-#     if layer != 1:
-#         success = click_area_in_iframes(driver, wait)
-#         if not success:
-#             print(f"{layer}층 이미지 클릭 실패")
-#             return False
-#         # 클릭 후 좌석 선택 함수 호출
-#         choiceSeat(layer, lineNumber, seatNumber)
-#     else:
-#         choiceSeat(layer, lineNumber, seatNumber)
-#     return True
-#
-# # ================================================================
-# # 실행 부분
-# # ================================================================
-#
-# # 좌석 선택 실행
-# select_layer_and_seat(driver, wait, layer, lineNumber, seatNumber)
-#
-# print("매크로 실행 완료!")
-# print(f"선택된 좌석: {SEAT_LAYER}층 {SEAT_LINE}줄 {SEAT_NUMBER}번")
+try:
+    driver.quit()
+    print("Browser closed.")
+except:
+    pass
