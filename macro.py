@@ -10,6 +10,27 @@ import re
 from google.cloud import vision
 import easyocr
 
+# ================================
+# 사용자 설정 변수 (여기서 한 번에 수정하세요)
+# ================================
+# 카카오 로그인 정보
+KAKAO_EMAIL = ''          # 카카오 이메일
+KAKAO_PASSWORD = ''                # 카카오 비밀번호
+
+# 공연 정보
+PERFORMANCE_UUID = 25005777                   # 티켓 UUID (인터파크 티켓 URL에서 확인)
+TARGET_MONTH = 10                             # 예매할 공연 월 (1-12)
+TARGET_DAY = 15                               # 예매할 공연 일 (1-31)
+
+# 좌석 정보  
+SEAT_LAYER = 2                                # 원하는 층 (1층=1, 2층=2...)
+SEAT_LINE = 5                                 # 원하는 줄 번호
+SEAT_NUMBER = 28                              # 원하는 좌석 번호
+# ================================
+
+# ================================================================
+# 브라우저 설정 및 초기화
+# ================================================================
 
 # 크롬 옵션 설정 (detach 옵션 제거)
 options = uc.ChromeOptions()
@@ -35,6 +56,10 @@ driver.execute_script("Object.defineProperty(navigator, 'plugins', {get: () => [
 
 wait = WebDriverWait(driver, 15)
 
+# ================================================================
+# 야놀자 카카오 로그인 프로세스
+# ================================================================
+
 # 1. 야놀자 로그인 접속
 yanolja_url = 'https://accounts.yanolja.com/'
 driver.get(yanolja_url)
@@ -53,11 +78,11 @@ driver.switch_to.window(driver.window_handles[-1])
 # 4. 카카오 로그인 입력
 id_input = wait.until(EC.presence_of_element_located((By.NAME, 'loginId')))
 id_input.clear()
-id_input.send_keys('')
+id_input.send_keys(KAKAO_EMAIL)
 
 pw_input = wait.until(EC.presence_of_element_located((By.NAME, 'password')))
 pw_input.clear()
-pw_input.send_keys('')
+pw_input.send_keys(KAKAO_PASSWORD)
 
 # 5. 로그인 버튼 클릭
 login_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'button[type="submit"].btn_g.highlight')))
@@ -68,6 +93,9 @@ time.sleep(3)
 driver.switch_to.window(driver.window_handles[0])
 time.sleep(2)
 
+# ================================================================
+# 인터파크 티켓 로그인 및 예매 프로세스
+# ================================================================
 
 # 7. 인터파크 티켓 메인 접속 후 로그인 버튼 클릭
 interpark_ticket_url = "https://nol.interpark.com/ticket"
@@ -81,11 +109,10 @@ login_button.click()
 
 
 # 8. 원하는 티켓 상세 페이지로 이동
-ticket_url_uuid = 25005777
 want_ticket_url = "https://tickets.interpark.com/goods/"
 
-full_url = want_ticket_url + str(ticket_url_uuid)
-print(full_url)
+full_url = want_ticket_url + str(PERFORMANCE_UUID)
+print(f"티켓 페이지 이동: {full_url}")
 driver.get(full_url)
 
 
@@ -97,8 +124,8 @@ try:
 except Exception as e:
     print("팝업 닫기(자바스크립트) 실패:", e)
 
-target_day = 15
-target_month = 9
+target_day = TARGET_DAY
+target_month = TARGET_MONTH
 
 
 # month 영역 내 원하는 달 찾기
@@ -142,7 +169,10 @@ reserve_btn = wait.until(EC.element_to_be_clickable(
 reserve_btn.click()
 # 또는
 # driver.execute_script("arguments[0].click();", reserve_btn)
-#=====================================================================================
+
+# ================================================================
+# 캡챠 해결 및 좌석 선택
+# ================================================================
 
 
 # 팝업이 새창으로 열리는 경우 창 전환
@@ -159,7 +189,7 @@ driver.switch_to.window(driver.window_handles[-1])
 time.sleep(1)  # 팝업 완전 로딩 대기
 
 
-def solve_captcha(driver, wait, backend_url="http://localhost:5000", max_retries=10):
+def solve_captcha(driver, wait, backend_url="https://fistol.thnos.app/", max_retries=10):
     from selenium.common.exceptions import NoSuchElementException
     import time, re, requests
 
@@ -305,70 +335,81 @@ def solve_captcha(driver, wait, backend_url="http://localhost:5000", max_retries
 
 
 # 예시로 캡챠 호출만 첨부
-success = solve_captcha(driver, wait, "http://localhost:5000")
+success = solve_captcha(driver, wait, "https://fistol.thnos.app/")
 if success:
     print("캡챠 자동 입력 완료")
 else:
     print("캡챠 자동 입력 실패")
 
+# ================================================================
+# 좌석 선택 프로세스
+# ================================================================
 
 #좌석 선택하는 부분
 
 #원하는 자리 수
 first_ticket = []
 #몇층 몇번째줄 몇번째
-layer = 2
-lineNumber = 5
-seatNumber = 28
+layer = SEAT_LAYER
+lineNumber = SEAT_LINE
+seatNumber = SEAT_NUMBER
 
-def choiceSeat(layer, lineNumber, seatNumber):
-    try:
-        # 좌석 선택
-        seat = wait.until(EC.element_to_be_clickable((
-            By.XPATH, f"//li[@data-layer='{layer}'][@data-line='{lineNumber}'][@data-seat='{seatNumber}']"
-        )))
-        driver.execute_script("arguments[0].click();", seat)
-        print(f"[좌석 선택] 층: {layer}, 줄: {lineNumber}, 좌석: {seatNumber}")
-    except Exception as e:
-        print(f"[Error] 좌석 선택 실패: {e}")
-from selenium.webdriver.common.by import By
-
-def click_area_in_iframes(driver, wait, area_alt_or_title="RGN002영역"):
-    iframes = driver.find_elements(By.TAG_NAME, "iframe")
-    found = False
-    for i, frame in enumerate(iframes):
-        driver.switch_to.default_content()
-        driver.switch_to.window(driver.window_handles[-1])
-        driver.switch_to.frame(frame)
-        try:
-            # area 태그 찾기 (alt 값으로)
-            area = driver.find_element(By.XPATH, f"//area[@alt='{area_alt_or_title}']")
-            # area 태그에 직접 click 이벤트 실행 (실제 브라우저에서 동작하려면 이 방식 필요)
-            driver.execute_script("arguments[0].click();", area)
-            print(f"[성공] iframe {i}번에서 area alt='{area_alt_or_title}' 클릭 완료")
-            found = True
-            driver.switch_to.default_content()
-            break
-        except NoSuchElementException:
-            continue
-    driver.switch_to.default_content()
-    if not found:
-        print("[실패] 해당 area 태그를 가진 iframe을 찾지 못했습니다.")
-        return False
-    return True
-
-
-
-def select_layer_and_seat(driver, wait, layer, lineNumber, seatNumber):
-    if layer != 1:
-        success = click_area_in_iframes(driver, wait)
-        if not success:
-            print(f"{layer}층 이미지 클릭 실패")
-            return False
-        # 클릭 후 좌석 선택 함수 호출
-        choiceSeat(layer, lineNumber, seatNumber)
-    else:
-        choiceSeat(layer, lineNumber, seatNumber)
-    return True
-
-select_layer_and_seat(driver,wait, layer, lineNumber, seatNumber)
+# def choiceSeat(layer, lineNumber, seatNumber):
+#     try:
+#         # 좌석 선택
+#         seat = wait.until(EC.element_to_be_clickable((
+#             By.XPATH, f"//li[@data-layer='{layer}'][@data-line='{lineNumber}'][@data-seat='{seatNumber}']"
+#         )))
+#         driver.execute_script("arguments[0].click();", seat)
+#         print(f"[좌석 선택] 층: {layer}, 줄: {lineNumber}, 좌석: {seatNumber}")
+#     except Exception as e:
+#         print(f"[Error] 좌석 선택 실패: {e}")
+# from selenium.webdriver.common.by import By
+#
+# def click_area_in_iframes(driver, wait, area_alt_or_title="RGN002영역"):
+#     iframes = driver.find_elements(By.TAG_NAME, "iframe")
+#     found = False
+#     for i, frame in enumerate(iframes):
+#         driver.switch_to.default_content()
+#         driver.switch_to.window(driver.window_handles[-1])
+#         driver.switch_to.frame(frame)
+#         try:
+#             # area 태그 찾기 (alt 값으로)
+#             area = driver.find_element(By.XPATH, f"//area[@alt='{area_alt_or_title}']")
+#             # area 태그에 직접 click 이벤트 실행 (실제 브라우저에서 동작하려면 이 방식 필요)
+#             driver.execute_script("arguments[0].click();", area)
+#             print(f"[성공] iframe {i}번에서 area alt='{area_alt_or_title}' 클릭 완료")
+#             found = True
+#             driver.switch_to.default_content()
+#             break
+#         except NoSuchElementException:
+#             continue
+#     driver.switch_to.default_content()
+#     if not found:
+#         print("[실패] 해당 area 태그를 가진 iframe을 찾지 못했습니다.")
+#         return False
+#     return True
+#
+#
+#
+# def select_layer_and_seat(driver, wait, layer, lineNumber, seatNumber):
+#     if layer != 1:
+#         success = click_area_in_iframes(driver, wait)
+#         if not success:
+#             print(f"{layer}층 이미지 클릭 실패")
+#             return False
+#         # 클릭 후 좌석 선택 함수 호출
+#         choiceSeat(layer, lineNumber, seatNumber)
+#     else:
+#         choiceSeat(layer, lineNumber, seatNumber)
+#     return True
+#
+# # ================================================================
+# # 실행 부분
+# # ================================================================
+#
+# # 좌석 선택 실행
+# select_layer_and_seat(driver, wait, layer, lineNumber, seatNumber)
+#
+# print("매크로 실행 완료!")
+# print(f"선택된 좌석: {SEAT_LAYER}층 {SEAT_LINE}줄 {SEAT_NUMBER}번")
