@@ -3,7 +3,7 @@
 This file explains how to use the program.
 
 ## 1. Download Executable File
-First, download the `Interpark_runing` executable file.
+First, download the `Interpark_run` executable file.
 
 ## 2. Run the Executable and Enter Required Information
 When you run the executable, you will be prompted to enter the following information:
