@@ -21,7 +21,7 @@ TARGET_DAY = (Which day to book)
 2-1. If you don't have a KakaoTalk account, please create one at the link below. (It's a famous Korean service company, so don't worry.)
 https://accounts.kakao.com/weblogin/create_account/?continue=https%3A%2F%2Faccounts.kakao.com%2Fweblogin%2Faccount&lang=ko&showHeader=false#selectVerifyMethod
 
-![Kakao Login Screen](images/kakao_login.png)
+![Kakao Login Screen](images/kakao_signup.png)
 
 2-2. You can find the performance UUID on the ticketing website. First, go to the link below and select the performance you want. Then check the numbers at the end of the address bar.
 https://nol.interpark.com/ticket
