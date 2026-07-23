@@ -7,8 +7,28 @@ from selenium.webdriver.support import expected_conditions as EC
 import time
 import requests
 import re
+import subprocess
 from google.cloud import vision
 import easyocr
+
+print("=" * 50)
+print("    Interpark Ticket Booking Macro")
+print("    github.com/kingcat47/fistol")
+print("=" * 50)
+print("프로그램을 초기화하는 중입니다. 잠시만 기다려주세요...")
+
+def get_chrome_version():
+    try:
+        result = subprocess.run(
+            ['reg', 'query', r'HKLM\SOFTWARE\Google\Chrome\BLBeacon', '/v', 'version'],
+            capture_output=True, text=True
+        )
+        match = re.search(r'(\d+)\.\d+\.\d+\.\d+', result.stdout)
+        if match:
+            return int(match.group(1))
+    except Exception:
+        pass
+    return None
 
 # ================================
 # User Input Section
@@ -64,24 +84,30 @@ print("=" * 50)
 
 print("Setting up Chrome browser...")
 
-# Chrome options setup
-options = uc.ChromeOptions()
-options.add_argument('--disable-popup-blocking')
-options.add_argument("--window-size=1900,1000")
-options.add_argument('--no-sandbox')
-options.add_argument('--disable-dev-shm-usage')
+chrome_version = get_chrome_version()
+if chrome_version:
+    print(f"감지된 Chrome 버전: {chrome_version}")
+else:
+    print("Chrome 버전 감지 실패 — 자동 감지로 진행합니다.")
+
+def make_options():
+    options = uc.ChromeOptions()
+    options.add_argument('--disable-popup-blocking')
+    options.add_argument("--window-size=1900,1000")
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
+    return options
 
 print("Creating Chrome driver...")
 
 try:
-    # Create undetected_chromedriver
-    driver = uc.Chrome(options=options, enable_cdp_events=True, incognito=True)
+    driver = uc.Chrome(options=make_options(), version_main=chrome_version, enable_cdp_events=True, incognito=True)
     print("Chrome driver created successfully!")
 except Exception as e:
     print(f"Error creating Chrome driver: {e}")
     print("Trying alternative method...")
     try:
-        driver = uc.Chrome(options=options)
+        driver = uc.Chrome(options=make_options(), version_main=chrome_version)
         print("Chrome driver created with alternative method!")
     except Exception as e2:
         print(f"Failed to create Chrome driver: {e2}")
